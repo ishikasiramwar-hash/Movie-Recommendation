@@ -4,7 +4,7 @@ import numpy as np
 import plotly.express as px
 
 # =========================================================
-# PAGE CONFIGURATION
+# PAGE SETTINGS
 # =========================================================
 
 st.set_page_config(
@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# CUSTOM CSS
+# CSS / UI DESIGN
 # =========================================================
 
 st.markdown("""
@@ -25,45 +25,35 @@ st.markdown("""
     background-color: #eeeeee;
 }
 
-/* Main title */
+/* ---------- TITLE ---------- */
+
 .dashboard-title {
     background: linear-gradient(
         90deg,
         #bdbdbd,
-        #f5f5f5,
+        #eeeeee,
         #bdbdbd
     );
-
     border-radius: 18px;
     padding: 18px;
     text-align: center;
-
-    font-size: 34px;
+    font-size: 32px;
     font-weight: 800;
-
     color: #111111;
-
-    box-shadow:
-        0px 5px 12px rgba(0,0,0,0.25);
-
+    box-shadow: 0px 5px 12px rgba(0,0,0,0.25);
     margin-bottom: 20px;
 }
 
-/* KPI Cards */
+/* ---------- KPI CARD ---------- */
 
 .kpi-card {
-    background: white;
-
+    background-color: white;
     border-radius: 18px;
-
-    padding: 18px;
-
+    padding: 18px 10px;
     text-align: center;
-
-    box-shadow:
-        0px 5px 12px rgba(0,0,0,0.18);
-
-    min-height: 110px;
+    box-shadow: 0px 5px 12px rgba(0,0,0,0.18);
+    min-height: 115px;
+    border: 1px solid #eeeeee;
 }
 
 .kpi-title {
@@ -76,52 +66,52 @@ st.markdown("""
     font-size: 28px;
     font-weight: 800;
     color: #111111;
-
     margin-top: 10px;
 }
 
-/* Sidebar */
+/* ---------- SIDEBAR ---------- */
 
 section[data-testid="stSidebar"] {
     background-color: #dddddd;
 }
 
-/* Sidebar heading */
-
 .sidebar-title {
-    background: #ffffff;
-
-    padding: 12px;
-
-    border-radius: 12px;
-
+    background-color: white;
+    padding: 14px;
+    border-radius: 14px;
     text-align: center;
+    font-size: 21px;
+    font-weight: 800;
+    margin-bottom: 18px;
+}
 
+/* ---------- CHART CONTAINER ---------- */
+
+.chart-title {
+    background-color: white;
+    padding: 8px;
+    border-radius: 8px;
     font-weight: bold;
-
-    font-size: 20px;
-
-    margin-bottom: 15px;
 }
 
-/* Recommendation card */
+/* ---------- RECOMMENDATION ---------- */
 
-.recommendation-card {
-
-    background: white;
-
-    padding: 20px;
-
+.recommendation-box {
+    background-color: white;
     border-radius: 15px;
-
-    box-shadow:
-        0px 4px 12px rgba(0,0,0,0.15);
-
-    margin-top: 10px;
-
+    padding: 18px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
 }
 
-/* Hide Streamlit elements */
+/* ---------- FOOTER ---------- */
+
+.footer {
+    text-align: center;
+    color: #555555;
+    padding: 15px;
+}
+
+/* Hide Streamlit branding */
 
 #MainMenu {
     visibility: hidden;
@@ -136,7 +126,7 @@ footer {
 
 
 # =========================================================
-# LOAD DATASET
+# LOAD CSV
 # =========================================================
 
 @st.cache_data
@@ -144,16 +134,19 @@ def load_data():
 
     try:
 
-        df = pd.read_csv(
+        data = pd.read_csv(
             "Data for repository.csv"
         )
 
-        return df
+        return data
 
     except FileNotFoundError:
 
         st.error(
-            "❌ Data file not found. "
+            "❌ Data file not found."
+        )
+
+        st.info(
             "Make sure 'Data for repository.csv' "
             "is in the same GitHub folder as app.py."
         )
@@ -172,17 +165,17 @@ df.columns = (
     df.columns
     .str.strip()
     .str.lower()
-    .str.replace(" ", "_")
+    .str.replace(" ", "_", regex=False)
 )
 
 
 # =========================================================
-# FUNCTION TO FIND COLUMN
+# FIND COLUMN FUNCTION
 # =========================================================
 
-def find_column(possible_names):
+def find_column(names):
 
-    for name in possible_names:
+    for name in names:
 
         if name in df.columns:
             return name
@@ -191,7 +184,7 @@ def find_column(possible_names):
 
 
 # =========================================================
-# IDENTIFY IMPORTANT COLUMNS
+# FIND DATASET COLUMNS
 # =========================================================
 
 movie_col = find_column([
@@ -212,6 +205,7 @@ rating_col = find_column([
     "rating",
     "ratings",
     "imdb_rating",
+    "imdb",
     "user_rating"
 ])
 
@@ -219,14 +213,18 @@ budget_col = find_column([
     "budget",
     "budget_inr",
     "budget_in_$",
-    "budget_inr_"
+    "budget_in_rs",
+    "budget_(inr)",
+    "budget_in_(inr)"
 ])
 
 revenue_col = find_column([
     "revenue",
     "revenue_inr",
+    "revenue_in_$",
     "box_office",
-    "box_office_revenue"
+    "box_office_revenue",
+    "total_revenue"
 ])
 
 director_col = find_column([
@@ -248,7 +246,8 @@ release_col = find_column([
 
 franchise_col = find_column([
     "franchise",
-    "whether_franchise"
+    "whether_franchise",
+    "is_franchise"
 ])
 
 remake_col = find_column([
@@ -259,13 +258,13 @@ remake_col = find_column([
 
 
 # =========================================================
-# CREATE FALLBACK COLUMNS
+# FALLBACK COLUMNS
 # =========================================================
 
 if movie_col is None:
 
     df["movie_name"] = [
-        f"Movie {i+1}"
+        "Movie " + str(i + 1)
         for i in range(len(df))
     ]
 
@@ -336,36 +335,105 @@ if remake_col is None:
 
 
 # =========================================================
+# NUMBER CLEANING FUNCTION
+# =========================================================
+
+def clean_number(value):
+
+    if pd.isna(value):
+        return 0.0
+
+    value = str(value).strip().lower()
+
+    # Remove currency symbols
+    value = (
+        value
+        .replace("₹", "")
+        .replace("$", "")
+        .replace("rs.", "")
+        .replace("rs", "")
+        .replace(",", "")
+    )
+
+    multiplier = 1
+
+    # Billion
+    if "bn" in value or "billion" in value:
+
+        multiplier = 1000
+
+        value = (
+            value
+            .replace("bn", "")
+            .replace("billion", "")
+        )
+
+    # Crore
+    elif "cr" in value or "crore" in value:
+
+        multiplier = 1
+
+        value = (
+            value
+            .replace("cr", "")
+            .replace("crore", "")
+        )
+
+    # Million
+    elif "m" in value:
+
+        multiplier = 1
+
+        value = value.replace("m", "")
+
+    # Thousand
+    elif "k" in value:
+
+        multiplier = 0.001
+
+        value = value.replace("k", "")
+
+    try:
+
+        number = float(value)
+
+        return number * multiplier
+
+    except:
+
+        return 0.0
+
+
+# =========================================================
 # CONVERT NUMERIC COLUMNS
 # =========================================================
 
 df[rating_col] = pd.to_numeric(
     df[rating_col],
     errors="coerce"
-)
+).fillna(0)
 
-df[budget_col] = pd.to_numeric(
-    df[budget_col],
-    errors="coerce"
-)
 
-df[revenue_col] = pd.to_numeric(
-    df[revenue_col],
-    errors="coerce"
+df[budget_col] = df[budget_col].apply(
+    clean_number
 )
 
 
-# Remove invalid rows
-
-df = df.dropna(
-    subset=[rating_col]
+df[revenue_col] = df[revenue_col].apply(
+    clean_number
 )
 
-df[rating_col] = df[rating_col].fillna(0)
 
-df[budget_col] = df[budget_col].fillna(0)
+# =========================================================
+# TITLE
+# =========================================================
 
-df[revenue_col] = df[revenue_col].fillna(0)
+st.markdown(
+    '<div class="dashboard-title">'
+    '🎬 🍿 MOVIE ANALYTICS DASHBOARD 🍿 🎬'
+    '</div>',
+    unsafe_allow_html=True
+)
 
 
 # =========================================================
@@ -373,35 +441,34 @@ df[revenue_col] = df[revenue_col].fillna(0)
 # =========================================================
 
 st.sidebar.markdown(
-    """
-    <div class="sidebar-title">
-        🎬 MOVIE FILTERS
-    </div>
-    """,
+    '<div class="sidebar-title">'
+    '🎬 MOVIE FILTERS'
+    '</div>',
     unsafe_allow_html=True
 )
 
 
-# ---------------------------------------------------------
-# Genre Filter
-# ---------------------------------------------------------
+# =========================================================
+# GENRE FILTER
+# =========================================================
 
-genre_values = sorted(
+genre_list = sorted(
     df[genre_col]
     .dropna()
     .astype(str)
     .unique()
 )
 
-selected_genres = st.sidebar.multiselect(
+
+selected_genre = st.sidebar.multiselect(
     "Genre",
-    genre_values
+    genre_list
 )
 
 
-# ---------------------------------------------------------
-# Rating Filter
-# ---------------------------------------------------------
+# =========================================================
+# RATING FILTER
+# =========================================================
 
 min_rating = float(
     df[rating_col].min()
@@ -425,54 +492,57 @@ selected_rating = st.sidebar.slider(
 )
 
 
-# ---------------------------------------------------------
-# Music Director
-# ---------------------------------------------------------
+# =========================================================
+# MUSIC DIRECTOR FILTER
+# =========================================================
 
-music_values = sorted(
+music_list = sorted(
     df[music_col]
     .dropna()
     .astype(str)
     .unique()
 )
 
+
 selected_music = st.sidebar.multiselect(
     "Music Director",
-    music_values
+    music_list
 )
 
 
-# ---------------------------------------------------------
-# Release Period
-# ---------------------------------------------------------
+# =========================================================
+# RELEASE PERIOD FILTER
+# =========================================================
 
-release_values = sorted(
+release_list = sorted(
     df[release_col]
     .dropna()
     .astype(str)
     .unique()
 )
 
+
 selected_release = st.sidebar.multiselect(
     "Release Period",
-    release_values
+    release_list
 )
 
 
-# ---------------------------------------------------------
-# Director
-# ---------------------------------------------------------
+# =========================================================
+# DIRECTOR FILTER
+# =========================================================
 
-director_values = sorted(
+director_list = sorted(
     df[director_col]
     .dropna()
     .astype(str)
     .unique()
 )
 
+
 selected_director = st.sidebar.multiselect(
     "Director",
-    director_values
+    director_list
 )
 
 
@@ -483,12 +553,12 @@ selected_director = st.sidebar.multiselect(
 filtered_df = df.copy()
 
 
-if selected_genres:
+if selected_genre:
 
     filtered_df = filtered_df[
         filtered_df[genre_col]
         .astype(str)
-        .isin(selected_genres)
+        .isin(selected_genre)
     ]
 
 
@@ -526,20 +596,6 @@ if selected_director:
 
 
 # =========================================================
-# TITLE
-# =========================================================
-
-st.markdown(
-    """
-    <div class="dashboard-title">
-        🎬 🍿 MOVIE ANALYTICS DASHBOARD 🍿 🎬
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# =========================================================
 # KPI CALCULATIONS
 # =========================================================
 
@@ -548,11 +604,17 @@ total_movies = len(filtered_df)
 
 if len(filtered_df) > 0:
 
-    average_rating = filtered_df[rating_col].mean()
+    average_rating = (
+        filtered_df[rating_col].mean()
+    )
 
-    total_budget = filtered_df[budget_col].sum()
+    total_budget = (
+        filtered_df[budget_col].sum()
+    )
 
-    total_revenue = filtered_df[revenue_col].sum()
+    total_revenue = (
+        filtered_df[revenue_col].sum()
+    )
 
 else:
 
@@ -567,85 +629,49 @@ else:
 # KPI CARDS
 # =========================================================
 
-col1, col2, col3, col4 = st.columns(4)
+k1, k2, k3, k4 = st.columns(4)
 
 
-with col1:
+with k1:
 
     st.markdown(
-        f"""
-        <div class="kpi-card">
-
-            <div class="kpi-title">
-                Total Movies
-            </div>
-
-            <div class="kpi-value">
-                {total_movies:,}
-            </div>
-
-        </div>
-        """,
+        f'<div class="kpi-card">'
+        f'<div class="kpi-title">Total Movies</div>'
+        f'<div class="kpi-value">{total_movies:,}</div>'
+        f'</div>',
         unsafe_allow_html=True
     )
 
 
-with col2:
+with k2:
 
     st.markdown(
-        f"""
-        <div class="kpi-card">
-
-            <div class="kpi-title">
-                Average Rating
-            </div>
-
-            <div class="kpi-value">
-                {average_rating:.2f}
-            </div>
-
-        </div>
-        """,
+        f'<div class="kpi-card">'
+        f'<div class="kpi-title">Average Rating</div>'
+        f'<div class="kpi-value">{average_rating:.2f}</div>'
+        f'</div>',
         unsafe_allow_html=True
     )
 
 
-with col3:
+with k3:
 
     st.markdown(
-        f"""
-        <div class="kpi-card">
-
-            <div class="kpi-title">
-                Total Budget
-            </div>
-
-            <div class="kpi-value">
-                ₹{total_budget:,.0f}
-            </div>
-
-        </div>
-        """,
+        f'<div class="kpi-card">'
+        f'<div class="kpi-title">Total Budget</div>'
+        f'<div class="kpi-value">₹{total_budget:,.0f}</div>'
+        f'</div>',
         unsafe_allow_html=True
     )
 
 
-with col4:
+with k4:
 
     st.markdown(
-        f"""
-        <div class="kpi-card">
-
-            <div class="kpi-title">
-                Total Revenue
-            </div>
-
-            <div class="kpi-value">
-                ₹{total_revenue:,.0f}
-            </div>
-
-        </div>
-        """,
+        f'<div class="kpi-card">'
+        f'<div class="kpi-title">Total Revenue</div>'
+        f'<div class="kpi-value">₹{total_revenue:,.0f}</div>'
+        f'</div>',
         unsafe_allow_html=True
     )
 
@@ -657,9 +683,7 @@ st.write("")
 # ROW 1
 # =========================================================
 
-c1, c2, c3, c4 = st.columns(
-    [1.2, 1.5, 1.3, 1.2]
-)
+c1, c2, c3, c4 = st.columns(4)
 
 
 # =========================================================
@@ -684,7 +708,7 @@ with c1:
         franchise_data,
         names="Franchise",
         values="Count",
-        hole=0.4,
+        hole=0.45,
         title="Revenue By Franchise"
     )
 
@@ -757,29 +781,28 @@ with c3:
         .groupby(genre_col)[rating_col]
         .mean()
         .reset_index()
-        .sort_values(
-            rating_col,
-            ascending=False
-        )
     )
 
-    rating_data[genre_col] = (
-        rating_data[genre_col]
-        .astype(str)
+    rating_data.columns = [
+        "Genre",
+        "Average Rating"
+    ]
+
+    rating_data = rating_data.sort_values(
+        "Average Rating",
+        ascending=False
     )
 
     fig = px.bar(
         rating_data,
-        x=genre_col,
-        y=rating_col,
+        x="Genre",
+        y="Average Rating",
         title="Movies By Rating",
         text_auto=".2f"
     )
 
     fig.update_layout(
         height=320,
-        xaxis_title="Genre",
-        yaxis_title="Average Rating",
         margin=dict(
             l=10,
             r=10,
@@ -809,29 +832,42 @@ with c4:
         .reset_index()
     )
 
-    fig = px.scatter(
-        budget_revenue,
-        x=budget_col,
-        y=revenue_col,
-        hover_name=movie_col,
-        size=revenue_col,
-        title="Budget Vs Revenue"
-    )
+    budget_revenue = budget_revenue[
+        (budget_revenue[budget_col] > 0) |
+        (budget_revenue[revenue_col] > 0)
+    ]
 
-    fig.update_layout(
-        height=320,
-        margin=dict(
-            l=10,
-            r=10,
-            t=50,
-            b=10
+    if len(budget_revenue) > 0:
+
+        fig = px.scatter(
+            budget_revenue,
+            x=budget_col,
+            y=revenue_col,
+            size=revenue_col,
+            hover_name=movie_col,
+            title="Budget Vs Revenue"
         )
-    )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+        fig.update_layout(
+            height=320,
+            margin=dict(
+                l=10,
+                r=10,
+                t=50,
+                b=10
+            )
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    else:
+
+        st.info(
+            "Budget and Revenue data not available."
+        )
 
 
 # =========================================================
@@ -1011,35 +1047,31 @@ with c8:
 
 
 # =========================================================
-# MOVIE RECOMMENDATION SECTION
+# MOVIE RECOMMENDATION
 # =========================================================
 
 st.markdown("---")
 
 st.markdown(
-    """
-    <div class="dashboard-title">
-        🍿 Movie Recommendation
-    </div>
-    """,
+    '<div class="dashboard-title">'
+    '🍿 MOVIE RECOMMENDATION'
+    '</div>',
     unsafe_allow_html=True
 )
 
 
 if len(filtered_df) > 0:
 
-    recommendation_col1, recommendation_col2 = st.columns(
-        [1, 2]
-    )
+    rec1, rec2 = st.columns([1, 2])
 
 
     # -----------------------------------------------------
-    # SELECT MOVIE
+    # MOVIE SELECTION
     # -----------------------------------------------------
 
-    with recommendation_col1:
+    with rec1:
 
-        movie_list = sorted(
+        movie_options = sorted(
             filtered_df[movie_col]
             .astype(str)
             .unique()
@@ -1047,7 +1079,7 @@ if len(filtered_df) > 0:
 
         selected_movie = st.selectbox(
             "Select a Movie",
-            movie_list
+            movie_options
         )
 
 
@@ -1055,26 +1087,25 @@ if len(filtered_df) > 0:
     # RECOMMENDATIONS
     # -----------------------------------------------------
 
-    with recommendation_col2:
+    with rec2:
 
-        selected_row = filtered_df[
+        selected_rows = filtered_df[
             filtered_df[movie_col]
             .astype(str)
             == selected_movie
         ]
 
-        if len(selected_row) > 0:
 
-            selected_genre = str(
-                selected_row.iloc[0][genre_col]
+        if len(selected_rows) > 0:
+
+            selected_row = selected_rows.iloc[0]
+
+            selected_genre_value = str(
+                selected_row[genre_col]
             )
 
             selected_rating_value = float(
-                selected_row.iloc[0][rating_col]
-            )
-
-            selected_director = str(
-                selected_row.iloc[0][director_col]
+                selected_row[rating_col]
             )
 
 
@@ -1082,7 +1113,7 @@ if len(filtered_df) > 0:
                 (
                     filtered_df[genre_col]
                     .astype(str)
-                    == selected_genre
+                    == selected_genre_value
                 )
                 &
                 (
@@ -1095,10 +1126,13 @@ if len(filtered_df) > 0:
 
             if len(recommendations) > 0:
 
-                recommendations["Rating Difference"] = abs(
+                recommendations[
+                    "Rating Difference"
+                ] = abs(
                     recommendations[rating_col]
                     - selected_rating_value
                 )
+
 
                 recommendations = (
                     recommendations
@@ -1110,39 +1144,34 @@ if len(filtered_df) > 0:
 
 
                 st.markdown(
-                    f"""
-                    <div class="recommendation-card">
-
-                    <h3>
-                    🎬 Recommended Movies
-                    </h3>
-
-                    <p>
-                    Based on the genre:
-                    <b>{selected_genre}</b>
-                    </p>
-
-                    <p>
-                    Selected movie:
-                    <b>{selected_movie}</b>
-                    </p>
-
-                    </div>
-                    """,
+                    '<div class="recommendation-box">'
+                    '<h3>🎬 Recommended Movies</h3>'
+                    f'<p>Based on genre: '
+                    f'<b>{selected_genre_value}</b></p>'
+                    f'<p>Selected movie: '
+                    f'<b>{selected_movie}</b></p>'
+                    '</div>',
                     unsafe_allow_html=True
                 )
 
 
-                for i, row in recommendations.iterrows():
+                st.write("")
+
+
+                for _, row in recommendations.iterrows():
 
                     st.write(
                         "🎥 "
                         + str(row[movie_col])
                         + " — Rating: "
-                        + str(round(
-                            float(row[rating_col]),
-                            2
-                        ))
+                        + str(
+                            round(
+                                float(
+                                    row[rating_col]
+                                ),
+                                2
+                            )
+                        )
                     )
 
             else:
@@ -1153,7 +1182,7 @@ if len(filtered_df) > 0:
 
 
 # =========================================================
-# DATASET INFORMATION
+# DATASET VIEW
 # =========================================================
 
 st.markdown("---")
@@ -1161,13 +1190,14 @@ st.markdown("---")
 with st.expander("📊 View Dataset"):
 
     st.write(
-        "Number of records:",
+        "Total records:",
         len(filtered_df)
     )
 
     st.dataframe(
         filtered_df,
-        use_container_width=True
+        use_container_width=True,
+        height=400
     )
 
 
@@ -1175,23 +1205,10 @@ with st.expander("📊 View Dataset"):
 # FOOTER
 # =========================================================
 
-st.markdown("---")
-
 st.markdown(
-    """
-    <div style="
-        text-align:center;
-        color:#555555;
-        padding:10px;
-    ">
-
-    🎬 Movie Analytics Dashboard
-
-    <br>
-
-    Built with ❤️ using Streamlit + Plotly
-
-    </div>
-    """,
+    '<div class="footer">'
+    '🎬 Movie Analytics Dashboard '
+    '| Built with Streamlit + Plotly'
+    '</div>',
     unsafe_allow_html=True
 )
