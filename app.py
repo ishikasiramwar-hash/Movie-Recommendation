@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 # =========================================================
-# PAGE CONFIG
+# PAGE SETTINGS
 # =========================================================
 
 st.set_page_config(
@@ -23,129 +23,114 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-    /* ---------- MAIN PAGE ---------- */
+.stApp {
+    background-color: #f5f6f8;
+}
 
-    .stApp {
-        background-color: #f5f6f8;
-    }
+/* HEADER */
+.header {
+    background: linear-gradient(135deg, #171722, #35264f);
+    padding: 30px;
+    border-radius: 18px;
+    text-align: center;
+    margin-bottom: 25px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
 
-    /* ---------- HEADER ---------- */
+.header h1 {
+    color: white;
+    font-size: 36px;
+    margin: 0;
+    font-weight: 800;
+}
 
-    .header {
-        background: linear-gradient(
-            135deg,
-            #171717 0%,
-            #29213f 50%,
-            #3d2850 100%
-        );
-
-        padding: 28px;
-        border-radius: 18px;
-        text-align: center;
-
-        margin-bottom: 25px;
-
-        box-shadow:
-            0px 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .header h1 {
-        color: white;
-        font-size: 36px;
-        margin: 0;
-        font-weight: 800;
-    }
-
-    .header p {
-        color: #d6d6d6;
-        font-size: 15px;
-        margin-top: 8px;
-    }
+.header p {
+    color: #d8d8df;
+    font-size: 15px;
+    margin-top: 8px;
+}
 
 
-    /* ---------- KPI CARDS ---------- */
+/* KPI CARDS */
+.kpi-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    min-height: 125px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+}
 
-    .kpi {
-        background: white;
+.kpi-icon {
+    font-size: 25px;
+}
 
-        padding: 20px;
+.kpi-title {
+    color: #777;
+    font-size: 13px;
+    margin-top: 5px;
+}
 
-        border-radius: 15px;
-
-        text-align: center;
-
-        box-shadow:
-            0px 4px 15px rgba(0,0,0,0.07);
-
-        min-height: 120px;
-    }
-
-    .kpi-icon {
-        font-size: 25px;
-    }
-
-    .kpi-title {
-        font-size: 13px;
-        color: #777;
-        margin-top: 5px;
-    }
-
-    .kpi-value {
-        font-size: 25px;
-        font-weight: 800;
-        color: #222;
-        margin-top: 5px;
-    }
+.kpi-value {
+    color: #222;
+    font-size: 26px;
+    font-weight: 800;
+    margin-top: 6px;
+}
 
 
-    /* ---------- SECTION ---------- */
-
-    .section-title {
-        font-size: 21px;
-        font-weight: 750;
-        color: #222;
-
-        margin-top: 25px;
-        margin-bottom: 10px;
-    }
+/* SECTION TITLES */
+.section-title {
+    font-size: 21px;
+    font-weight: 750;
+    color: #222;
+    margin-top: 25px;
+    margin-bottom: 12px;
+}
 
 
-    /* ---------- INSIGHT ---------- */
+/* INSIGHT CARDS */
+.insight-card {
+    background: white;
+    padding: 18px;
+    border-radius: 14px;
+    min-height: 90px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+}
 
-    .insight {
-        background: white;
+.insight-label {
+    color: #777;
+    font-size: 12px;
+}
 
-        padding: 18px;
-
-        border-radius: 14px;
-
-        box-shadow:
-            0px 3px 12px rgba(0,0,0,0.06);
-    }
-
-    .insight-label {
-        color: #777;
-        font-size: 13px;
-    }
-
-    .insight-value {
-        color: #222;
-        font-size: 18px;
-        font-weight: 700;
-
-        margin-top: 5px;
-    }
+.insight-value {
+    color: #222;
+    font-size: 17px;
+    font-weight: 700;
+    margin-top: 7px;
+}
 
 
-    /* ---------- SIDEBAR ---------- */
+/* SIDEBAR */
+section[data-testid="stSidebar"] {
+    background-color: #20202b;
+}
 
-    section[data-testid="stSidebar"] {
-        background-color: #20202b;
-    }
+section[data-testid="stSidebar"] * {
+    color: white;
+}
 
-    section[data-testid="stSidebar"] * {
-        color: white;
-    }
+
+/* REMOVE EXTRA TOP SPACE */
+.block-container {
+    padding-top: 2rem;
+}
+
+
+/* TABLE */
+[data-testid="stDataFrame"] {
+    border-radius: 12px;
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -158,12 +143,12 @@ st.markdown("""
 @st.cache_data
 def load_data():
 
-    file = Path("Data for repository.csv")
+    file_path = Path("Data for repository.csv")
 
-    if not file.exists():
+    if not file_path.exists():
         return pd.DataFrame()
 
-    return pd.read_csv(file)
+    return pd.read_csv(file_path)
 
 
 df = load_data()
@@ -176,8 +161,8 @@ df = load_data()
 if df.empty:
 
     st.error(
-        "Data file not found. Make sure "
-        "'Data for repository.csv' is in the same folder as app.py."
+        "❌ Data for repository.csv was not found. "
+        "Place the CSV file in the same folder as app.py."
     )
 
     st.stop()
@@ -197,17 +182,17 @@ df.columns = df.columns.str.strip()
 df["Revenue(INR)"] = pd.to_numeric(
     df["Revenue(INR)"],
     errors="coerce"
-)
+).fillna(0)
 
 df["Budget(INR)"] = pd.to_numeric(
     df["Budget(INR)"],
     errors="coerce"
-)
+).fillna(0)
 
 df["Number of Screens"] = pd.to_numeric(
     df["Number of Screens"],
     errors="coerce"
-)
+).fillna(0)
 
 
 # =========================================================
@@ -228,7 +213,7 @@ st.markdown("""
 
 
 # =========================================================
-# SIDEBAR
+# SIDEBAR FILTERS
 # =========================================================
 
 st.sidebar.markdown("## 🎞️ MOVIE FILTERS")
@@ -236,75 +221,111 @@ st.sidebar.markdown("## 🎞️ MOVIE FILTERS")
 st.sidebar.markdown("---")
 
 
-# ---------- Genre ----------
+# ---------------------------------------------------------
+# GENRE
+# ---------------------------------------------------------
 
-genre_options = sorted(
-    df["Genre"].dropna().unique()
+genre_list = sorted(
+    df["Genre"]
+    .dropna()
+    .astype(str)
+    .unique()
 )
 
 selected_genre = st.sidebar.multiselect(
     "🎭 Genre",
-    genre_options
+    genre_list,
+    placeholder="Select genre"
 )
 
 
-# ---------- Release Period ----------
+# ---------------------------------------------------------
+# RELEASE PERIOD
+# ---------------------------------------------------------
 
-release_options = sorted(
-    df["Release Period"].dropna().unique()
+release_list = sorted(
+    df["Release Period"]
+    .dropna()
+    .astype(str)
+    .unique()
 )
 
 selected_release = st.sidebar.multiselect(
     "📅 Release Period",
-    release_options
+    release_list,
+    placeholder="Select period"
 )
 
 
-# ---------- Remake ----------
+# ---------------------------------------------------------
+# REMAKE
+# ---------------------------------------------------------
 
-remake_options = sorted(
-    df["Whether Remake"].dropna().unique()
+remake_list = sorted(
+    df["Whether Remake"]
+    .dropna()
+    .astype(str)
+    .unique()
 )
 
 selected_remake = st.sidebar.multiselect(
     "🔁 Remake",
-    remake_options
+    remake_list,
+    placeholder="Select option"
 )
 
 
-# ---------- Franchise ----------
+# ---------------------------------------------------------
+# FRANCHISE
+# ---------------------------------------------------------
 
-franchise_options = sorted(
-    df["Whether Franchise"].dropna().unique()
+franchise_list = sorted(
+    df["Whether Franchise"]
+    .dropna()
+    .astype(str)
+    .unique()
 )
 
 selected_franchise = st.sidebar.multiselect(
     "🎞️ Franchise",
-    franchise_options
+    franchise_list,
+    placeholder="Select option"
 )
 
 
-# ---------- Director ----------
+# ---------------------------------------------------------
+# DIRECTOR
+# ---------------------------------------------------------
 
-director_options = sorted(
-    df["Director"].dropna().unique()
+director_list = sorted(
+    df["Director"]
+    .dropna()
+    .astype(str)
+    .unique()
 )
 
 selected_director = st.sidebar.multiselect(
     "🎥 Director",
-    director_options
+    director_list,
+    placeholder="Select director"
 )
 
 
-# ---------- Music Director ----------
+# ---------------------------------------------------------
+# MUSIC DIRECTOR
+# ---------------------------------------------------------
 
-music_options = sorted(
-    df["Music Director"].dropna().unique()
+music_list = sorted(
+    df["Music Director"]
+    .dropna()
+    .astype(str)
+    .unique()
 )
 
 selected_music = st.sidebar.multiselect(
     "🎵 Music Director",
-    music_options
+    music_list,
+    placeholder="Select music director"
 )
 
 
@@ -370,20 +391,22 @@ total_budget = filtered_df["Budget(INR)"].sum()
 total_screens = filtered_df["Number of Screens"].sum()
 
 
-# Format Indian currency
+# =========================================================
+# CURRENCY FORMAT
+# =========================================================
 
 def format_crore(value):
 
     crore = value / 10000000
 
     if crore >= 1000:
-        return f"₹{crore/1000:.1f}K Cr"
+        return f"₹{crore / 1000:.1f}K Cr"
 
     return f"₹{crore:.1f} Cr"
 
 
 # =========================================================
-# KPI SECTION
+# OVERVIEW
 # =========================================================
 
 st.markdown(
@@ -392,13 +415,17 @@ st.markdown(
 )
 
 
-c1, c2, c3, c4 = st.columns(4)
+k1, k2, k3, k4 = st.columns(4)
 
 
-with c1:
+# ---------------------------------------------------------
+# TOTAL MOVIES
+# ---------------------------------------------------------
+
+with k1:
 
     st.markdown(f"""
-    <div class="kpi">
+    <div class="kpi-card">
 
         <div class="kpi-icon">🎬</div>
 
@@ -414,10 +441,14 @@ with c1:
     """, unsafe_allow_html=True)
 
 
-with c2:
+# ---------------------------------------------------------
+# TOTAL REVENUE
+# ---------------------------------------------------------
+
+with k2:
 
     st.markdown(f"""
-    <div class="kpi">
+    <div class="kpi-card">
 
         <div class="kpi-icon">💰</div>
 
@@ -433,10 +464,14 @@ with c2:
     """, unsafe_allow_html=True)
 
 
-with c3:
+# ---------------------------------------------------------
+# TOTAL BUDGET
+# ---------------------------------------------------------
+
+with k3:
 
     st.markdown(f"""
-    <div class="kpi">
+    <div class="kpi-card">
 
         <div class="kpi-icon">💵</div>
 
@@ -452,10 +487,14 @@ with c3:
     """, unsafe_allow_html=True)
 
 
-with c4:
+# ---------------------------------------------------------
+# TOTAL SCREENS
+# ---------------------------------------------------------
+
+with k4:
 
     st.markdown(f"""
-    <div class="kpi">
+    <div class="kpi-card">
 
         <div class="kpi-icon">🖥️</div>
 
@@ -472,17 +511,17 @@ with c4:
 
 
 # =========================================================
-# CHART 1 + CHART 2
+# CHART SECTION 1
 # =========================================================
 
-col1, col2 = st.columns(2)
+chart1, chart2 = st.columns(2)
 
 
 # =========================================================
 # MOVIES BY GENRE
 # =========================================================
 
-with col1:
+with chart1:
 
     st.markdown(
         '<div class="section-title">🎭 Movies by Genre</div>',
@@ -522,8 +561,8 @@ with col1:
         height=420,
         margin=dict(
             l=10,
-            r=20,
-            t=20,
+            r=30,
+            t=10,
             b=10
         ),
         showlegend=False
@@ -536,10 +575,10 @@ with col1:
 
 
 # =========================================================
-# RELEASE PERIOD
+# MOVIES BY RELEASE PERIOD
 # =========================================================
 
-with col2:
+with chart2:
 
     st.markdown(
         '<div class="section-title">📅 Movies by Release Period</div>',
@@ -574,7 +613,7 @@ with col2:
         margin=dict(
             l=20,
             r=20,
-            t=20,
+            t=10,
             b=20
         ),
         showlegend=False
@@ -587,20 +626,20 @@ with col2:
 
 
 # =========================================================
-# REMAKE + FRANCHISE
+# CHART SECTION 2
 # =========================================================
 
-col3, col4 = st.columns(2)
+chart3, chart4 = st.columns(2)
 
 
 # =========================================================
 # ORIGINAL VS REMAKE
 # =========================================================
 
-with col3:
+with chart3:
 
     st.markdown(
-        '<div class="section-title">🔁 Original vs Remake Movies</div>',
+        '<div class="section-title">🔁 Original vs Remake</div>',
         unsafe_allow_html=True
     )
 
@@ -640,10 +679,10 @@ with col3:
 
 
 # =========================================================
-# FRANCHISE
+# FRANCHISE VS NON-FRANCHISE
 # =========================================================
 
-with col4:
+with chart4:
 
     st.markdown(
         '<div class="section-title">🎞️ Franchise vs Non-Franchise</div>',
@@ -696,7 +735,11 @@ st.markdown(
 
 
 money_data = filtered_df[
-    ["Movie Name", "Revenue(INR)", "Budget(INR)"]
+    [
+        "Movie Name",
+        "Revenue(INR)",
+        "Budget(INR)"
+    ]
 ].copy()
 
 
@@ -722,12 +765,11 @@ fig_money.update_layout(
     height=450,
     xaxis_title="Movie",
     yaxis_title="Amount (INR)",
-    legend_title="",
     margin=dict(
         l=20,
         r=20,
-        t=20,
-        b=80
+        t=10,
+        b=100
     )
 )
 
@@ -739,17 +781,17 @@ st.plotly_chart(
 
 
 # =========================================================
-# TOP 10 MOVIES
+# TOP MOVIES
 # =========================================================
 
-col5, col6 = st.columns(2)
+top1, top2 = st.columns(2)
 
 
 # =========================================================
-# TOP REVENUE
+# TOP REVENUE MOVIES
 # =========================================================
 
-with col5:
+with top1:
 
     st.markdown(
         '<div class="section-title">🏆 Top 10 Movies by Revenue</div>',
@@ -758,7 +800,10 @@ with col5:
 
     top_revenue = (
         filtered_df[
-            ["Movie Name", "Revenue(INR)"]
+            [
+                "Movie Name",
+                "Revenue(INR)"
+            ]
         ]
         .sort_values(
             "Revenue(INR)",
@@ -768,13 +813,16 @@ with col5:
         .copy()
     )
 
-    top_revenue["Revenue"] = (
-        top_revenue["Revenue(INR)"]
-        / 10000000
+    top_revenue["Revenue (₹ Cr)"] = (
+        top_revenue["Revenue(INR)"] /
+        10000000
     ).round(2)
 
     top_revenue = top_revenue[
-        ["Movie Name", "Revenue"]
+        [
+            "Movie Name",
+            "Revenue (₹ Cr)"
+        ]
     ]
 
     top_revenue.columns = [
@@ -790,10 +838,10 @@ with col5:
 
 
 # =========================================================
-# TOP BUDGET
+# TOP BUDGET MOVIES
 # =========================================================
 
-with col6:
+with top2:
 
     st.markdown(
         '<div class="section-title">💎 Top 10 Movies by Budget</div>',
@@ -802,7 +850,10 @@ with col6:
 
     top_budget = (
         filtered_df[
-            ["Movie Name", "Budget(INR)"]
+            [
+                "Movie Name",
+                "Budget(INR)"
+            ]
         ]
         .sort_values(
             "Budget(INR)",
@@ -812,13 +863,16 @@ with col6:
         .copy()
     )
 
-    top_budget["Budget"] = (
-        top_budget["Budget(INR)"]
-        / 10000000
+    top_budget["Budget (₹ Cr)"] = (
+        top_budget["Budget(INR)"] /
+        10000000
     ).round(2)
 
     top_budget = top_budget[
-        ["Movie Name", "Budget"]
+        [
+            "Movie Name",
+            "Budget (₹ Cr)"
+        ]
     ]
 
     top_budget.columns = [
@@ -834,17 +888,17 @@ with col6:
 
 
 # =========================================================
-# TOP DIRECTORS + MUSIC DIRECTORS
+# DIRECTORS
 # =========================================================
 
-col7, col8 = st.columns(2)
+director_col, music_col = st.columns(2)
 
 
 # =========================================================
 # TOP DIRECTORS
 # =========================================================
 
-with col7:
+with director_col:
 
     st.markdown(
         '<div class="section-title">🎥 Top Directors</div>',
@@ -864,7 +918,8 @@ with col7:
     ]
 
     director_data = director_data.sort_values(
-        "Movies"
+        "Movies",
+        ascending=True
     )
 
     fig_director = px.bar(
@@ -877,7 +932,7 @@ with col7:
 
     fig_director.update_layout(
         template="simple_white",
-        height=430,
+        height=420,
         showlegend=False
     )
 
@@ -895,7 +950,7 @@ with col7:
 # TOP MUSIC DIRECTORS
 # =========================================================
 
-with col8:
+with music_col:
 
     st.markdown(
         '<div class="section-title">🎵 Top Music Directors</div>',
@@ -915,7 +970,8 @@ with col8:
     ]
 
     music_data = music_data.sort_values(
-        "Movies"
+        "Movies",
+        ascending=True
     )
 
     fig_music = px.bar(
@@ -928,7 +984,7 @@ with col8:
 
     fig_music.update_layout(
         template="simple_white",
-        height=430,
+        height=420,
         showlegend=False
     )
 
@@ -943,7 +999,7 @@ with col8:
 
 
 # =========================================================
-# FINAL INSIGHTS
+# QUICK INSIGHTS
 # =========================================================
 
 st.markdown(
@@ -952,12 +1008,8 @@ st.markdown(
 )
 
 
-i1, i2, i3, i4 = st.columns(4)
-
-
-# Most popular genre
-
-popular_genre = (
+# Most common genre
+most_common_genre = (
     filtered_df["Genre"]
     .value_counts()
     .idxmax()
@@ -965,8 +1017,7 @@ popular_genre = (
 
 
 # Most common release period
-
-popular_period = (
+most_common_period = (
     filtered_df["Release Period"]
     .value_counts()
     .idxmax()
@@ -974,38 +1025,39 @@ popular_period = (
 
 
 # Highest revenue movie
+highest_revenue_row = filtered_df.loc[
+    filtered_df["Revenue(INR)"].idxmax()
+]
 
-highest_revenue_movie = (
-    filtered_df
-    .loc[
-        filtered_df["Revenue(INR)"].idxmax(),
-        "Movie Name"
-    ]
-)
+highest_revenue_movie = highest_revenue_row[
+    "Movie Name"
+]
 
 
 # Highest budget movie
+highest_budget_row = filtered_df.loc[
+    filtered_df["Budget(INR)"].idxmax()
+]
 
-highest_budget_movie = (
-    filtered_df
-    .loc[
-        filtered_df["Budget(INR)"].idxmax(),
-        "Movie Name"
-    ]
-)
+highest_budget_movie = highest_budget_row[
+    "Movie Name"
+]
+
+
+i1, i2, i3, i4 = st.columns(4)
 
 
 with i1:
 
     st.markdown(f"""
-    <div class="insight">
+    <div class="insight-card">
 
         <div class="insight-label">
             🎭 MOST COMMON GENRE
         </div>
 
         <div class="insight-value">
-            {popular_genre}
+            {most_common_genre}
         </div>
 
     </div>
@@ -1015,14 +1067,14 @@ with i1:
 with i2:
 
     st.markdown(f"""
-    <div class="insight">
+    <div class="insight-card">
 
         <div class="insight-label">
-            📅 MOST COMMON RELEASE PERIOD
+            📅 MOST COMMON PERIOD
         </div>
 
         <div class="insight-value">
-            {popular_period}
+            {most_common_period}
         </div>
 
     </div>
@@ -1032,10 +1084,10 @@ with i2:
 with i3:
 
     st.markdown(f"""
-    <div class="insight">
+    <div class="insight-card">
 
         <div class="insight-label">
-            🏆 HIGHEST REVENUE MOVIE
+            🏆 HIGHEST REVENUE
         </div>
 
         <div class="insight-value">
@@ -1049,10 +1101,10 @@ with i3:
 with i4:
 
     st.markdown(f"""
-    <div class="insight">
+    <div class="insight-card">
 
         <div class="insight-label">
-            💎 HIGHEST BUDGET MOVIE
+            💎 HIGHEST BUDGET
         </div>
 
         <div class="insight-value">
@@ -1072,15 +1124,16 @@ st.markdown("""
 <hr>
 
 <div style="
-text-align:center;
-color:#777;
-padding:15px;
+    text-align:center;
+    color:#777;
+    padding:15px;
 ">
 
 🎬 <b>Movie Analytics Dashboard</b>
 <br>
+
 <small>
-Interactive analysis of movies, revenue, budget and trends
+Interactive analysis using movie data
 </small>
 
 </div>
