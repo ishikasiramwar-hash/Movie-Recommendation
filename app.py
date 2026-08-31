@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 # =========================================================
-# PAGE SETTINGS
+# PAGE CONFIG
 # =========================================================
 
 st.set_page_config(
@@ -39,16 +39,16 @@ df = load_data()
 
 
 # =========================================================
-# CHECK DATA
+# CHECK FILE
 # =========================================================
 
 if df is None:
 
-    st.error("Data for repository.csv was not found.")
+    st.error("❌ Data file not found.")
 
     st.info(
-        "Make sure Data for repository.csv and app.py "
-        "are in the same GitHub repository."
+        "Please keep 'Data for repository.csv' "
+        "in the same folder as app.py."
     )
 
     st.stop()
@@ -122,80 +122,56 @@ st.sidebar.title("🎞️ Movie Filters")
 st.sidebar.divider()
 
 
-# Genre
-
-genre_list = sorted(
-    df["Genre"].dropna().unique().tolist()
-)
+# Genre Filter
 
 selected_genre = st.sidebar.multiselect(
     "🎭 Genre",
-    genre_list
+    sorted(df["Genre"].unique())
 )
 
 
-# Release Period
-
-period_list = sorted(
-    df["Release Period"].dropna().unique().tolist()
-)
+# Release Period Filter
 
 selected_period = st.sidebar.multiselect(
     "📅 Release Period",
-    period_list
+    sorted(df["Release Period"].unique())
 )
 
 
-# Remake
-
-remake_list = sorted(
-    df["Whether Remake"].dropna().unique().tolist()
-)
+# Remake Filter
 
 selected_remake = st.sidebar.multiselect(
     "🔁 Remake",
-    remake_list
+    sorted(df["Whether Remake"].unique())
 )
 
 
-# Franchise
-
-franchise_list = sorted(
-    df["Whether Franchise"].dropna().unique().tolist()
-)
+# Franchise Filter
 
 selected_franchise = st.sidebar.multiselect(
     "🎞️ Franchise",
-    franchise_list
+    sorted(df["Whether Franchise"].unique())
 )
 
 
-# Director
-
-director_list = sorted(
-    df["Director"].dropna().unique().tolist()
-)
+# Director Filter
 
 selected_director = st.sidebar.multiselect(
     "🎥 Director",
-    director_list
+    sorted(df["Director"].unique())
 )
 
 
-# Music Director
-
-music_list = sorted(
-    df["Music Director"].dropna().unique().tolist()
-)
+# Music Director Filter
 
 selected_music = st.sidebar.multiselect(
     "🎵 Music Director",
-    music_list
+    sorted(df["Music Director"].unique())
 )
 
 
 # =========================================================
-# FILTER DATA
+# APPLY FILTERS
 # =========================================================
 
 filtered_df = df.copy()
@@ -244,17 +220,8 @@ if selected_music:
 
 
 # =========================================================
-# KPI CALCULATIONS
+# CURRENCY FUNCTION
 # =========================================================
-
-total_movies = len(filtered_df)
-
-total_revenue = filtered_df["Revenue(INR)"].sum()
-
-total_budget = filtered_df["Budget(INR)"].sum()
-
-total_screens = filtered_df["Number of Screens"].sum()
-
 
 def crore(value):
 
@@ -268,38 +235,47 @@ def crore(value):
 st.header("📌 Overview")
 
 
+total_movies = len(filtered_df)
+
+total_revenue = filtered_df["Revenue(INR)"].sum()
+
+total_budget = filtered_df["Budget(INR)"].sum()
+
+total_screens = filtered_df["Number of Screens"].sum()
+
+
 col1, col2, col3, col4 = st.columns(4)
 
 
 with col1:
 
     st.metric(
-        label="🎬 Total Movies",
-        value=f"{total_movies:,}"
+        "🎬 Total Movies",
+        f"{total_movies:,}"
     )
 
 
 with col2:
 
     st.metric(
-        label="💰 Total Revenue",
-        value=f"₹{crore(total_revenue):,.1f} Cr"
+        "💰 Total Revenue",
+        f"₹{crore(total_revenue):,.1f} Cr"
     )
 
 
 with col3:
 
     st.metric(
-        label="💵 Total Budget",
-        value=f"₹{crore(total_budget):,.1f} Cr"
+        "💵 Total Budget",
+        f"₹{crore(total_budget):,.1f} Cr"
     )
 
 
 with col4:
 
     st.metric(
-        label="🖥️ Total Screens",
-        value=f"{total_screens:,.0f}"
+        "🖥️ Total Screens",
+        f"{total_screens:,.0f}"
     )
 
 
@@ -307,15 +283,11 @@ st.divider()
 
 
 # =========================================================
-# FIRST ROW
+# CHART 1 — GENRE
 # =========================================================
 
 col1, col2 = st.columns(2)
 
-
-# =========================================================
-# MOVIES BY GENRE
-# =========================================================
 
 with col1:
 
@@ -350,7 +322,7 @@ with col1:
     )
 
     fig.update_layout(
-        height=450,
+        height=430,
         margin=dict(
             l=10,
             r=20,
@@ -367,7 +339,7 @@ with col1:
 
 
 # =========================================================
-# RELEASE PERIOD
+# CHART 2 — RELEASE PERIOD
 # =========================================================
 
 with col2:
@@ -397,7 +369,7 @@ with col2:
     )
 
     fig.update_layout(
-        height=450,
+        height=430,
         margin=dict(
             l=20,
             r=20,
@@ -414,15 +386,11 @@ with col2:
 
 
 # =========================================================
-# SECOND ROW
+# CHART 3 — REMAKE
 # =========================================================
 
 col1, col2 = st.columns(2)
 
-
-# =========================================================
-# ORIGINAL VS REMAKE
-# =========================================================
 
 with col1:
 
@@ -447,13 +415,7 @@ with col1:
     )
 
     fig.update_layout(
-        height=400,
-        margin=dict(
-            l=10,
-            r=10,
-            t=20,
-            b=20
-        )
+        height=400
     )
 
     st.plotly_chart(
@@ -463,7 +425,7 @@ with col1:
 
 
 # =========================================================
-# FRANCHISE
+# CHART 4 — FRANCHISE
 # =========================================================
 
 with col2:
@@ -489,13 +451,7 @@ with col2:
     )
 
     fig.update_layout(
-        height=400,
-        margin=dict(
-            l=10,
-            r=10,
-            t=20,
-            b=20
-        )
+        height=400
     )
 
     st.plotly_chart(
@@ -511,7 +467,7 @@ with col2:
 st.subheader("💰 Revenue vs Budget — Top Movies")
 
 
-money = filtered_df[
+money_data = filtered_df[
     [
         "Movie Name",
         "Revenue(INR)",
@@ -520,14 +476,14 @@ money = filtered_df[
 ].copy()
 
 
-money = money.sort_values(
+money_data = money_data.sort_values(
     "Revenue(INR)",
     ascending=False
 ).head(15)
 
 
 fig = px.bar(
-    money,
+    money_data,
     x="Movie Name",
     y=[
         "Revenue(INR)",
@@ -536,8 +492,9 @@ fig = px.bar(
     barmode="group"
 )
 
+
 fig.update_layout(
-    height=500,
+    height=480,
     xaxis_title="Movie",
     yaxis_title="Amount (INR)",
     margin=dict(
@@ -547,6 +504,7 @@ fig.update_layout(
         b=100
     )
 )
+
 
 st.plotly_chart(
     fig,
@@ -561,9 +519,7 @@ st.plotly_chart(
 col1, col2 = st.columns(2)
 
 
-# =========================================================
 # TOP REVENUE
-# =========================================================
 
 with col1:
 
@@ -601,9 +557,7 @@ with col1:
     )
 
 
-# =========================================================
 # TOP BUDGET
-# =========================================================
 
 with col2:
 
@@ -648,10 +602,6 @@ with col2:
 col1, col2 = st.columns(2)
 
 
-# =========================================================
-# DIRECTORS
-# =========================================================
-
 with col1:
 
     st.subheader("🎥 Top Directors")
@@ -686,7 +636,7 @@ with col1:
     )
 
     fig.update_layout(
-        height=450,
+        height=430,
         showlegend=False
     )
 
@@ -695,10 +645,6 @@ with col1:
         use_container_width=True
     )
 
-
-# =========================================================
-# MUSIC DIRECTORS
-# =========================================================
 
 with col2:
 
@@ -734,7 +680,7 @@ with col2:
     )
 
     fig.update_layout(
-        height=450,
+        height=430,
         showlegend=False
     )
 
@@ -759,18 +705,15 @@ if len(filtered_df) > 0:
         .idxmax()
     )
 
-
     most_common_period = (
         filtered_df["Release Period"]
         .value_counts()
         .idxmax()
     )
 
-
     highest_revenue_row = filtered_df.loc[
         filtered_df["Revenue(INR)"].idxmax()
     ]
-
 
     highest_budget_row = filtered_df.loc[
         filtered_df["Budget(INR)"].idxmax()
@@ -820,15 +763,11 @@ else:
 
 
 # =========================================================
-# DATASET
+# END
 # =========================================================
 
 st.divider()
 
-st.subheader("📋 Movie Dataset")
-
-st.dataframe(
-    filtered_df,
-    use_container_width=True,
-    hide_index=True
+st.caption(
+    "🎬 Movie Analytics Dashboard | Interactive Data Visualization"
 )
