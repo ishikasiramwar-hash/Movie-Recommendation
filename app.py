@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 
-# ============================================================
-# PAGE CONFIGURATION
-# ============================================================
+
+# =========================================================
+# PAGE SETTINGS
+# =========================================================
 
 st.set_page_config(
     page_title="Movie Analytics Dashboard",
@@ -13,844 +15,649 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============================================================
-# CUSTOM CSS
-# ============================================================
 
-st.markdown("""
-<style>
-
-    /* Main background */
-    .stApp {
-        background-color: #f5f7fb;
-    }
-
-    /* Sidebar */
-    section[data-testid="stSidebar"] {
-        background-color: #111827;
-    }
-
-    section[data-testid="stSidebar"] * {
-        color: white;
-    }
-
-    /* Dashboard title */
-    .dashboard-header {
-        background: white;
-        padding: 28px;
-        border-radius: 18px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-        margin-bottom: 25px;
-        text-align: center;
-    }
-
-    .dashboard-header h1 {
-        color: #111827;
-        font-size: 32px;
-        margin-bottom: 8px;
-    }
-
-    .dashboard-header p {
-        color: #6b7280;
-        font-size: 16px;
-        margin: 0;
-    }
-
-    /* KPI cards */
-    .kpi-card {
-        background: white;
-        padding: 22px;
-        border-radius: 16px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        min-height: 130px;
-        text-align: center;
-    }
-
-    .kpi-icon {
-        font-size: 25px;
-        margin-bottom: 8px;
-    }
-
-    .kpi-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: #6b7280;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .kpi-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #111827;
-        margin-top: 8px;
-    }
-
-    /* Section headings */
-    .section-title {
-        font-size: 22px;
-        font-weight: 700;
-        color: #111827;
-        margin-top: 25px;
-        margin-bottom: 15px;
-    }
-
-    /* Info box */
-    .info-box {
-        background: white;
-        padding: 18px;
-        border-radius: 14px;
-        border: 1px solid #e5e7eb;
-        margin-top: 15px;
-    }
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
+# =========================================================
 # LOAD DATA
-# ============================================================
+# =========================================================
 
 @st.cache_data
 def load_data():
 
-    # Change this filename if your CSV has another name
-    file_names = [
-        "movies.csv",
-        "movie.csv",
-        "Movie.csv",
-        "movies_metadata.csv"
-    ]
+    file_path = Path("Data for repository.csv")
 
-    for file in file_names:
-        try:
-            df = pd.read_csv(file)
-            return df
-        except:
-            pass
+    if not file_path.exists():
+        return None
 
-    return pd.DataFrame()
+    df = pd.read_csv(file_path)
+
+    df.columns = df.columns.str.strip()
+
+    return df
 
 
 df = load_data()
 
 
-# ============================================================
-# IF NO DATASET FOUND
-# ============================================================
+# =========================================================
+# CHECK DATA
+# =========================================================
 
-if df.empty:
+if df is None:
 
-    st.markdown("""
-    <div class="dashboard-header">
-        <h1>🎬 MOVIE ANALYTICS DASHBOARD</h1>
-        <p>Explore Movie Trends, Revenue, Budget, Genres & Performance</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.error("Data for repository.csv was not found.")
 
-    st.warning("⚠️ Movie dataset was not found.")
-
-    uploaded_file = st.file_uploader(
-        "Upload your movie CSV file",
-        type=["csv"]
+    st.info(
+        "Make sure Data for repository.csv and app.py "
+        "are in the same GitHub repository."
     )
 
-    if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-    else:
-        st.info(
-            "Please upload your CSV file or place movies.csv "
-            "in the same folder as app.py."
+    st.stop()
+
+
+# =========================================================
+# CLEAN DATA
+# =========================================================
+
+text_columns = [
+    "Movie Name",
+    "Release Period",
+    "Whether Remake",
+    "Whether Franchise",
+    "Genre",
+    "New Actor",
+    "New Director",
+    "New Music Director",
+    "Lead Star",
+    "Director",
+    "Music Director"
+]
+
+for col in text_columns:
+
+    if col in df.columns:
+
+        df[col] = (
+            df[col]
+            .fillna("Unknown")
+            .astype(str)
+            .str.strip()
         )
-        st.stop()
 
 
-# ============================================================
-# CLEAN COLUMN NAMES
-# ============================================================
+numeric_columns = [
+    "Number of Screens",
+    "Revenue(INR)",
+    "Budget(INR)"
+]
 
-df.columns = (
-    df.columns
-    .str.strip()
-    .str.lower()
-    .str.replace(" ", "_")
-)
+for col in numeric_columns:
 
+    if col in df.columns:
 
-# ============================================================
-# FIND COLUMNS AUTOMATICALLY
-# ============================================================
-
-def find_column(possible_names):
-
-    for name in possible_names:
-        if name in df.columns:
-            return name
-
-    return None
-
-
-title_col = find_column([
-    "title",
-    "movie_title",
-    "name",
-    "original_title"
-])
-
-genre_col = find_column([
-    "genre",
-    "genres",
-    "category"
-])
-
-release_col = find_column([
-    "release_year",
-    "year",
-    "release_date",
-    "released"
-])
-
-budget_col = find_column([
-    "budget",
-    "production_budget"
-])
-
-revenue_col = find_column([
-    "revenue",
-    "box_office",
-    "gross",
-    "worldwide_gross"
-])
-
-rating_col = find_column([
-    "rating",
-    "imdb_rating",
-    "vote_average",
-    "score"
-])
-
-director_col = find_column([
-    "director",
-    "director_name"
-])
-
-music_col = find_column([
-    "music_director",
-    "musicdirector",
-    "composer",
-    "music_composer"
-])
-
-franchise_col = find_column([
-    "franchise",
-    "collection",
-    "series"
-])
-
-remake_col = find_column([
-    "remake",
-    "is_remake"
-])
-
-
-# ============================================================
-# DATA PREPROCESSING
-# ============================================================
-
-# Numeric columns
-for col in [budget_col, revenue_col, rating_col]:
-    if col:
         df[col] = pd.to_numeric(
             df[col],
             errors="coerce"
-        )
+        ).fillna(0)
 
 
-# Release year
-if release_col:
+# =========================================================
+# TITLE
+# =========================================================
 
-    if df[release_col].dtype == "object":
+st.title("🎬 Movie Analytics Dashboard")
 
-        if "date" in release_col:
-            df["release_year_clean"] = pd.to_datetime(
-                df[release_col],
-                errors="coerce"
-            ).dt.year
-        else:
-            df["release_year_clean"] = pd.to_numeric(
-                df[release_col],
-                errors="coerce"
-            )
+st.caption(
+    "Explore movie trends, revenue, budget, genres and performance"
+)
 
-    else:
-        df["release_year_clean"] = pd.to_numeric(
-            df[release_col],
-            errors="coerce"
-        )
-
-else:
-    df["release_year_clean"] = None
+st.divider()
 
 
-# ============================================================
+# =========================================================
 # SIDEBAR
-# ============================================================
+# =========================================================
 
-st.sidebar.markdown("""
-<h2>🎬 MOVIE FILTERS</h2>
-""", unsafe_allow_html=True)
+st.sidebar.title("🎞️ Movie Filters")
+
+st.sidebar.divider()
+
+
+# Genre
+
+genre_list = sorted(
+    df["Genre"].dropna().unique().tolist()
+)
+
+selected_genre = st.sidebar.multiselect(
+    "🎭 Genre",
+    genre_list
+)
+
+
+# Release Period
+
+period_list = sorted(
+    df["Release Period"].dropna().unique().tolist()
+)
+
+selected_period = st.sidebar.multiselect(
+    "📅 Release Period",
+    period_list
+)
+
+
+# Remake
+
+remake_list = sorted(
+    df["Whether Remake"].dropna().unique().tolist()
+)
+
+selected_remake = st.sidebar.multiselect(
+    "🔁 Remake",
+    remake_list
+)
+
+
+# Franchise
+
+franchise_list = sorted(
+    df["Whether Franchise"].dropna().unique().tolist()
+)
+
+selected_franchise = st.sidebar.multiselect(
+    "🎞️ Franchise",
+    franchise_list
+)
+
+
+# Director
+
+director_list = sorted(
+    df["Director"].dropna().unique().tolist()
+)
+
+selected_director = st.sidebar.multiselect(
+    "🎥 Director",
+    director_list
+)
+
+
+# Music Director
+
+music_list = sorted(
+    df["Music Director"].dropna().unique().tolist()
+)
+
+selected_music = st.sidebar.multiselect(
+    "🎵 Music Director",
+    music_list
+)
+
+
+# =========================================================
+# FILTER DATA
+# =========================================================
 
 filtered_df = df.copy()
 
 
-# ---------------- Genre ----------------
+if selected_genre:
 
-if genre_col:
-
-    genres = (
-        filtered_df[genre_col]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
-
-    genres = sorted(genres)
-
-    selected_genre = st.sidebar.selectbox(
-        "🎭 Genre",
-        ["All Genres"] + genres
-    )
-
-    if selected_genre != "All Genres":
-        filtered_df = filtered_df[
-            filtered_df[genre_col].astype(str) == selected_genre
-        ]
+    filtered_df = filtered_df[
+        filtered_df["Genre"].isin(selected_genre)
+    ]
 
 
-# ---------------- Release Period ----------------
+if selected_period:
 
-if "release_year_clean" in filtered_df.columns:
-
-    years = pd.to_numeric(
-        filtered_df["release_year_clean"],
-        errors="coerce"
-    ).dropna()
-
-    if not years.empty:
-
-        min_year = int(years.min())
-        max_year = int(years.max())
-
-        if min_year < max_year:
-
-            selected_years = st.sidebar.slider(
-                "📅 Release Period",
-                min_value=min_year,
-                max_value=max_year,
-                value=(min_year, max_year)
-            )
-
-            filtered_df = filtered_df[
-                (filtered_df["release_year_clean"] >= selected_years[0]) &
-                (filtered_df["release_year_clean"] <= selected_years[1])
-            ]
+    filtered_df = filtered_df[
+        filtered_df["Release Period"].isin(selected_period)
+    ]
 
 
-# ---------------- Remake ----------------
+if selected_remake:
 
-if remake_col:
-
-    remake_values = (
-        df[remake_col]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
-
-    if len(remake_values) > 0:
-
-        selected_remake = st.sidebar.selectbox(
-            "🔄 Remake",
-            ["All"] + sorted(remake_values)
-        )
-
-        if selected_remake != "All":
-
-            filtered_df = filtered_df[
-                filtered_df[remake_col].astype(str) == selected_remake
-            ]
+    filtered_df = filtered_df[
+        filtered_df["Whether Remake"].isin(selected_remake)
+    ]
 
 
-# ---------------- Franchise ----------------
+if selected_franchise:
 
-if franchise_col:
-
-    franchise_values = (
-        df[franchise_col]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
-
-    if len(franchise_values) > 0:
-
-        selected_franchise = st.sidebar.selectbox(
-            "🎞️ Franchise",
-            ["All"] + sorted(franchise_values)
-        )
-
-        if selected_franchise != "All":
-
-            filtered_df = filtered_df[
-                filtered_df[franchise_col].astype(str)
-                == selected_franchise
-            ]
+    filtered_df = filtered_df[
+        filtered_df["Whether Franchise"].isin(selected_franchise)
+    ]
 
 
-# ---------------- Director ----------------
+if selected_director:
 
-if director_col:
-
-    directors = (
-        df[director_col]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
-
-    if len(directors) > 0:
-
-        selected_director = st.sidebar.selectbox(
-            "🎥 Director",
-            ["All Directors"] + sorted(directors)
-        )
-
-        if selected_director != "All Directors":
-
-            filtered_df = filtered_df[
-                filtered_df[director_col].astype(str)
-                == selected_director
-            ]
+    filtered_df = filtered_df[
+        filtered_df["Director"].isin(selected_director)
+    ]
 
 
-# ---------------- Music Director ----------------
+if selected_music:
 
-if music_col:
-
-    music_directors = (
-        df[music_col]
-        .dropna()
-        .astype(str)
-        .unique()
-        .tolist()
-    )
-
-    if len(music_directors) > 0:
-
-        selected_music = st.sidebar.selectbox(
-            "🎵 Music Director",
-            ["All Music Directors"] + sorted(music_directors)
-        )
-
-        if selected_music != "All Music Directors":
-
-            filtered_df = filtered_df[
-                filtered_df[music_col].astype(str)
-                == selected_music
-            ]
+    filtered_df = filtered_df[
+        filtered_df["Music Director"].isin(selected_music)
+    ]
 
 
-# ============================================================
-# HEADER
-# ============================================================
-
-st.markdown("""
-<div class="dashboard-header">
-    <h1>🎬 MOVIE ANALYTICS DASHBOARD</h1>
-    <p>Explore Movie Trends, Revenue, Budget, Genres & Performance</p>
-</div>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# OVERVIEW
-# ============================================================
-
-st.markdown(
-    '<div class="section-title">📌 Overview</div>',
-    unsafe_allow_html=True
-)
-
-
-# KPI calculations
+# =========================================================
+# KPI CALCULATIONS
+# =========================================================
 
 total_movies = len(filtered_df)
 
-if revenue_col:
-    total_revenue = filtered_df[revenue_col].sum()
-else:
-    total_revenue = 0
+total_revenue = filtered_df["Revenue(INR)"].sum()
 
-if budget_col:
-    total_budget = filtered_df[budget_col].sum()
-else:
-    total_budget = 0
+total_budget = filtered_df["Budget(INR)"].sum()
+
+total_screens = filtered_df["Number of Screens"].sum()
 
 
-# Screens count
-total_screens = 0
+def crore(value):
 
-for col in ["screens", "screen_count", "number_of_screens"]:
-
-    if col in filtered_df.columns:
-
-        total_screens = pd.to_numeric(
-            filtered_df[col],
-            errors="coerce"
-        ).sum()
-
-        break
+    return value / 10000000
 
 
-# If no screen column, show N/A
-if total_screens == 0:
-    screen_display = "N/A"
-else:
-    screen_display = f"{int(total_screens):,}"
+# =========================================================
+# OVERVIEW
+# =========================================================
 
+st.header("📌 Overview")
 
-# Revenue display
-if total_revenue >= 10000000:
-    revenue_display = f"₹{total_revenue / 10000000:.1f} Cr"
-elif total_revenue >= 100000:
-    revenue_display = f"₹{total_revenue / 100000:.1f} L"
-else:
-    revenue_display = f"₹{total_revenue:,.0f}"
-
-
-# Budget display
-if total_budget >= 10000000:
-    budget_display = f"₹{total_budget / 10000000:.1f} Cr"
-elif total_budget >= 100000:
-    budget_display = f"₹{total_budget / 100000:.1f} L"
-else:
-    budget_display = f"₹{total_budget:,.0f}"
-
-
-# ============================================================
-# KPI CARDS
-# ============================================================
 
 col1, col2, col3, col4 = st.columns(4)
 
 
 with col1:
 
-    st.markdown(f"""
-    <div class="kpi-card">
-
-        <div class="kpi-icon">🎬</div>
-
-        <div class="kpi-title">
-            TOTAL MOVIES
-        </div>
-
-        <div class="kpi-value">
-            {total_movies:,}
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric(
+        label="🎬 Total Movies",
+        value=f"{total_movies:,}"
+    )
 
 
 with col2:
 
-    st.markdown(f"""
-    <div class="kpi-card">
-
-        <div class="kpi-icon">💰</div>
-
-        <div class="kpi-title">
-            TOTAL REVENUE
-        </div>
-
-        <div class="kpi-value">
-            {revenue_display}
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric(
+        label="💰 Total Revenue",
+        value=f"₹{crore(total_revenue):,.1f} Cr"
+    )
 
 
 with col3:
 
-    st.markdown(f"""
-    <div class="kpi-card">
-
-        <div class="kpi-icon">💵</div>
-
-        <div class="kpi-title">
-            TOTAL BUDGET
-        </div>
-
-        <div class="kpi-value">
-            {budget_display}
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.metric(
+        label="💵 Total Budget",
+        value=f"₹{crore(total_budget):,.1f} Cr"
+    )
 
 
 with col4:
 
-    st.markdown(f"""
-    <div class="kpi-card">
-
-        <div class="kpi-icon">🏢</div>
-
-        <div class="kpi-title">
-            TOTAL SCREENS
-        </div>
-
-        <div class="kpi-value">
-            {screen_display}
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# ============================================================
-# CHART 1 — MOVIES BY GENRE
-# ============================================================
-
-if genre_col:
-
-    st.markdown(
-        '<div class="section-title">🎭 Movies by Genre</div>',
-        unsafe_allow_html=True
+    st.metric(
+        label="🖥️ Total Screens",
+        value=f"{total_screens:,.0f}"
     )
 
+
+st.divider()
+
+
+# =========================================================
+# FIRST ROW
+# =========================================================
+
+col1, col2 = st.columns(2)
+
+
+# =========================================================
+# MOVIES BY GENRE
+# =========================================================
+
+with col1:
+
+    st.subheader("🎭 Movies by Genre")
+
     genre_data = (
-        filtered_df[genre_col]
-        .dropna()
-        .astype(str)
+        filtered_df["Genre"]
         .value_counts()
         .reset_index()
     )
 
-    genre_data.columns = ["Genre", "Movies"]
+    genre_data.columns = [
+        "Genre",
+        "Movies"
+    ]
 
-    if not genre_data.empty:
-
-        fig_genre = px.bar(
-            genre_data.head(15),
-            x="Genre",
-            y="Movies",
-            title="Number of Movies by Genre",
-            text="Movies"
-        )
-
-        fig_genre.update_layout(
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            xaxis_title="Genre",
-            yaxis_title="Number of Movies"
-        )
-
-        st.plotly_chart(
-            fig_genre,
-            use_container_width=True
-        )
-
-
-# ============================================================
-# CHART 2 — MOVIES BY RELEASE PERIOD
-# ============================================================
-
-if "release_year_clean" in filtered_df.columns:
-
-    release_data = filtered_df.dropna(
-        subset=["release_year_clean"]
+    genre_data = genre_data.sort_values(
+        "Movies",
+        ascending=True
     )
 
-    if not release_data.empty:
+    fig = px.bar(
+        genre_data,
+        x="Movies",
+        y="Genre",
+        orientation="h",
+        text="Movies"
+    )
 
-        release_data = (
-            release_data
-            .groupby("release_year_clean")
-            .size()
-            .reset_index(name="Movies")
+    fig.update_traces(
+        textposition="outside"
+    )
+
+    fig.update_layout(
+        height=450,
+        margin=dict(
+            l=10,
+            r=20,
+            t=20,
+            b=20
+        ),
+        showlegend=False
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+
+# =========================================================
+# RELEASE PERIOD
+# =========================================================
+
+with col2:
+
+    st.subheader("📅 Movies by Release Period")
+
+    period_data = (
+        filtered_df["Release Period"]
+        .value_counts()
+        .reset_index()
+    )
+
+    period_data.columns = [
+        "Release Period",
+        "Movies"
+    ]
+
+    fig = px.bar(
+        period_data,
+        x="Release Period",
+        y="Movies",
+        text="Movies"
+    )
+
+    fig.update_traces(
+        textposition="outside"
+    )
+
+    fig.update_layout(
+        height=450,
+        margin=dict(
+            l=20,
+            r=20,
+            t=20,
+            b=20
+        ),
+        showlegend=False
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+
+# =========================================================
+# SECOND ROW
+# =========================================================
+
+col1, col2 = st.columns(2)
+
+
+# =========================================================
+# ORIGINAL VS REMAKE
+# =========================================================
+
+with col1:
+
+    st.subheader("🔁 Original vs Remake")
+
+    remake_data = (
+        filtered_df["Whether Remake"]
+        .value_counts()
+        .reset_index()
+    )
+
+    remake_data.columns = [
+        "Type",
+        "Movies"
+    ]
+
+    fig = px.pie(
+        remake_data,
+        names="Type",
+        values="Movies",
+        hole=0.5
+    )
+
+    fig.update_layout(
+        height=400,
+        margin=dict(
+            l=10,
+            r=10,
+            t=20,
+            b=20
         )
+    )
 
-        st.markdown(
-            '<div class="section-title">📅 Movies by Release Period</div>',
-            unsafe_allow_html=True
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+
+# =========================================================
+# FRANCHISE
+# =========================================================
+
+with col2:
+
+    st.subheader("🎞️ Franchise vs Non-Franchise")
+
+    franchise_data = (
+        filtered_df["Whether Franchise"]
+        .value_counts()
+        .reset_index()
+    )
+
+    franchise_data.columns = [
+        "Type",
+        "Movies"
+    ]
+
+    fig = px.pie(
+        franchise_data,
+        names="Type",
+        values="Movies",
+        hole=0.5
+    )
+
+    fig.update_layout(
+        height=400,
+        margin=dict(
+            l=10,
+            r=10,
+            t=20,
+            b=20
         )
+    )
 
-        fig_release = px.line(
-            release_data,
-            x="release_year_clean",
-            y="Movies",
-            markers=True,
-            title="Movie Releases Over Time"
-        )
-
-        fig_release.update_layout(
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            xaxis_title="Release Year",
-            yaxis_title="Number of Movies"
-        )
-
-        st.plotly_chart(
-            fig_release,
-            use_container_width=True
-        )
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
 
-# ============================================================
+# =========================================================
 # REVENUE VS BUDGET
-# ============================================================
+# =========================================================
 
-if budget_col and revenue_col:
+st.subheader("💰 Revenue vs Budget — Top Movies")
 
-    st.markdown(
-        '<div class="section-title">💰 Revenue vs Budget</div>',
-        unsafe_allow_html=True
+
+money = filtered_df[
+    [
+        "Movie Name",
+        "Revenue(INR)",
+        "Budget(INR)"
+    ]
+].copy()
+
+
+money = money.sort_values(
+    "Revenue(INR)",
+    ascending=False
+).head(15)
+
+
+fig = px.bar(
+    money,
+    x="Movie Name",
+    y=[
+        "Revenue(INR)",
+        "Budget(INR)"
+    ],
+    barmode="group"
+)
+
+fig.update_layout(
+    height=500,
+    xaxis_title="Movie",
+    yaxis_title="Amount (INR)",
+    margin=dict(
+        l=20,
+        r=20,
+        t=20,
+        b=100
+    )
+)
+
+st.plotly_chart(
+    fig,
+    use_container_width=True
+)
+
+
+# =========================================================
+# TOP MOVIES
+# =========================================================
+
+col1, col2 = st.columns(2)
+
+
+# =========================================================
+# TOP REVENUE
+# =========================================================
+
+with col1:
+
+    st.subheader("🏆 Top 10 Movies by Revenue")
+
+    top_revenue = filtered_df[
+        [
+            "Movie Name",
+            "Revenue(INR)"
+        ]
+    ].sort_values(
+        "Revenue(INR)",
+        ascending=False
+    ).head(10).copy()
+
+
+    top_revenue["Revenue (₹ Cr)"] = (
+        top_revenue["Revenue(INR)"] /
+        10000000
+    ).round(2)
+
+
+    top_revenue = top_revenue[
+        [
+            "Movie Name",
+            "Revenue (₹ Cr)"
+        ]
+    ]
+
+
+    st.dataframe(
+        top_revenue,
+        use_container_width=True,
+        hide_index=True
     )
 
-    scatter_df = filtered_df[
-        [budget_col, revenue_col]
-    ].dropna()
 
-    if not scatter_df.empty:
+# =========================================================
+# TOP BUDGET
+# =========================================================
 
-        fig_scatter = px.scatter(
-            scatter_df,
-            x=budget_col,
-            y=revenue_col,
-            title="Budget vs Revenue",
-            opacity=0.65
-        )
+with col2:
 
-        fig_scatter.update_layout(
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            xaxis_title="Budget",
-            yaxis_title="Revenue"
-        )
+    st.subheader("💎 Top 10 Movies by Budget")
 
-        st.plotly_chart(
-            fig_scatter,
-            use_container_width=True
-        )
+    top_budget = filtered_df[
+        [
+            "Movie Name",
+            "Budget(INR)"
+        ]
+    ].sort_values(
+        "Budget(INR)",
+        ascending=False
+    ).head(10).copy()
 
 
-# ============================================================
-# TOP MOVIES BY REVENUE
-# ============================================================
+    top_budget["Budget (₹ Cr)"] = (
+        top_budget["Budget(INR)"] /
+        10000000
+    ).round(2)
 
-if revenue_col:
 
-    st.markdown(
-        '<div class="section-title">🏆 Top Movies by Revenue</div>',
-        unsafe_allow_html=True
+    top_budget = top_budget[
+        [
+            "Movie Name",
+            "Budget (₹ Cr)"
+        ]
+    ]
+
+
+    st.dataframe(
+        top_budget,
+        use_container_width=True,
+        hide_index=True
     )
 
-    top_movies = filtered_df.dropna(
-        subset=[revenue_col]
-    ).copy()
 
-    if not top_movies.empty:
+# =========================================================
+# DIRECTOR ANALYSIS
+# =========================================================
 
-        top_movies = top_movies.sort_values(
-            revenue_col,
-            ascending=False
-        ).head(10)
-
-        if title_col:
-
-            top_chart = px.bar(
-                top_movies,
-                x=revenue_col,
-                y=title_col,
-                orientation="h",
-                title="Top 10 Movies by Revenue",
-                text=revenue_col
-            )
-
-            top_chart.update_layout(
-                plot_bgcolor="white",
-                paper_bgcolor="white",
-                yaxis_title="Movie",
-                xaxis_title="Revenue"
-            )
-
-            st.plotly_chart(
-                top_chart,
-                use_container_width=True
-            )
+col1, col2 = st.columns(2)
 
 
-# ============================================================
-# RATINGS ANALYSIS
-# ============================================================
+# =========================================================
+# DIRECTORS
+# =========================================================
 
-if rating_col:
+with col1:
 
-    st.markdown(
-        '<div class="section-title">⭐ Movie Ratings</div>',
-        unsafe_allow_html=True
-    )
-
-    rating_data = filtered_df[rating_col].dropna()
-
-    if not rating_data.empty:
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-
-            avg_rating = rating_data.mean()
-
-            st.metric(
-                "Average Rating",
-                f"{avg_rating:.2f}"
-            )
-
-        with col2:
-
-            max_rating = rating_data.max()
-
-            st.metric(
-                "Highest Rating",
-                f"{max_rating:.2f}"
-            )
-
-
-# ============================================================
-# TOP DIRECTORS
-# ============================================================
-
-if director_col:
-
-    st.markdown(
-        '<div class="section-title">🎥 Top Directors</div>',
-        unsafe_allow_html=True
-    )
+    st.subheader("🎥 Top Directors")
 
     director_data = (
-        filtered_df[director_col]
-        .dropna()
-        .astype(str)
+        filtered_df["Director"]
         .value_counts()
         .head(10)
         .reset_index()
@@ -861,88 +668,167 @@ if director_col:
         "Movies"
     ]
 
-    if not director_data.empty:
+    director_data = director_data.sort_values(
+        "Movies",
+        ascending=True
+    )
 
-        fig_director = px.bar(
-            director_data,
-            x="Movies",
-            y="Director",
-            orientation="h",
-            title="Top 10 Directors by Number of Movies",
-            text="Movies"
-        )
+    fig = px.bar(
+        director_data,
+        x="Movies",
+        y="Director",
+        orientation="h",
+        text="Movies"
+    )
 
-        fig_director.update_layout(
-            plot_bgcolor="white",
-            paper_bgcolor="white"
-        )
+    fig.update_traces(
+        textposition="outside"
+    )
 
-        st.plotly_chart(
-            fig_director,
-            use_container_width=True
-        )
+    fig.update_layout(
+        height=450,
+        showlegend=False
+    )
 
-
-# ============================================================
-# MOVIE DATA TABLE
-# ============================================================
-
-st.markdown(
-    '<div class="section-title">📋 Movie Details</div>',
-    unsafe_allow_html=True
-)
-
-display_df = filtered_df.copy()
-
-# Limit columns for clean display
-preferred_columns = []
-
-for col in [
-    title_col,
-    genre_col,
-    release_col,
-    budget_col,
-    revenue_col,
-    rating_col,
-    director_col
-]:
-
-    if col and col in display_df.columns:
-        preferred_columns.append(col)
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
 
-if preferred_columns:
+# =========================================================
+# MUSIC DIRECTORS
+# =========================================================
 
-    display_df = display_df[
-        preferred_columns
+with col2:
+
+    st.subheader("🎵 Top Music Directors")
+
+    music_data = (
+        filtered_df["Music Director"]
+        .value_counts()
+        .head(10)
+        .reset_index()
+    )
+
+    music_data.columns = [
+        "Music Director",
+        "Movies"
+    ]
+
+    music_data = music_data.sort_values(
+        "Movies",
+        ascending=True
+    )
+
+    fig = px.bar(
+        music_data,
+        x="Movies",
+        y="Music Director",
+        orientation="h",
+        text="Movies"
+    )
+
+    fig.update_traces(
+        textposition="outside"
+    )
+
+    fig.update_layout(
+        height=450,
+        showlegend=False
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+
+# =========================================================
+# QUICK INSIGHTS
+# =========================================================
+
+st.header("💡 Quick Insights")
+
+
+if len(filtered_df) > 0:
+
+    most_common_genre = (
+        filtered_df["Genre"]
+        .value_counts()
+        .idxmax()
+    )
+
+
+    most_common_period = (
+        filtered_df["Release Period"]
+        .value_counts()
+        .idxmax()
+    )
+
+
+    highest_revenue_row = filtered_df.loc[
+        filtered_df["Revenue(INR)"].idxmax()
     ]
 
 
+    highest_budget_row = filtered_df.loc[
+        filtered_df["Budget(INR)"].idxmax()
+    ]
+
+
+    col1, col2, col3, col4 = st.columns(4)
+
+
+    with col1:
+
+        st.metric(
+            "🎭 Most Common Genre",
+            most_common_genre
+        )
+
+
+    with col2:
+
+        st.metric(
+            "📅 Most Common Period",
+            most_common_period
+        )
+
+
+    with col3:
+
+        st.metric(
+            "🏆 Highest Revenue Movie",
+            highest_revenue_row["Movie Name"]
+        )
+
+
+    with col4:
+
+        st.metric(
+            "💎 Highest Budget Movie",
+            highest_budget_row["Movie Name"]
+        )
+
+
+else:
+
+    st.warning(
+        "No movies match the selected filters."
+    )
+
+
+# =========================================================
+# DATASET
+# =========================================================
+
+st.divider()
+
+st.subheader("📋 Movie Dataset")
+
 st.dataframe(
-    display_df,
+    filtered_df,
     use_container_width=True,
     hide_index=True
 )
-
-
-# ============================================================
-# FOOTER
-# ============================================================
-
-st.markdown("""
-<br>
-
-<div style="
-    text-align:center;
-    padding:20px;
-    color:#6b7280;
-    font-size:14px;
-">
-
-🎬 Movie Analytics Dashboard  
-<br>
-Built with Python • Pandas • Plotly • Streamlit
-
-</div>
-
-""", unsafe_allow_html=True)
